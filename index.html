@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>M8U3 — Living Room + Kitchen 3DGS Scan</title>
+<style>
+  html,body{margin:0;height:100%;overflow:hidden;background:#101018;font-family:system-ui,sans-serif}
+  #info{position:fixed;top:12px;left:12px;z-index:10;background:rgba(20,20,30,.82);
+        color:#fff;padding:10px 14px;border-radius:8px;font-size:13px;max-width:280px}
+  #info b{display:block;margin-bottom:4px;font-size:14px}
+  #status{position:fixed;bottom:12px;left:12px;z-index:10;color:#8fc;font-size:12px;
+          background:rgba(20,20,30,.82);padding:6px 10px;border-radius:8px}
+</style>
+</head>
+<body>
+<div id="info">
+  <b>M8U3 — Living Room + Kitchen</b>
+  3D Gaussian Splat scan, browser viewer.<br>
+  Drag = orbit · scroll = zoom
+</div>
+<div id="status">loading...</div>
+
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdnjs.cloudflare.com/ajax/libs/three.js/0.160.0/three.module.min.js",
+  "@mkkellogg/gaussian-splats-3d": "https://cdn.jsdelivr.net/npm/@mkkellogg/gaussian-splats-3d@0.4.7/build/gaussian-splats-3d.module.js"
+}}
+</script>
+
+<script type="module">
+import * as GaussianSplats3D from '@mkkellogg/gaussian-splats-3d';
+
+const SPLAT_FILE = 'livingroom_clean.ply';
+
+const stat = document.getElementById('status');
+stat.textContent = 'loading ' + SPLAT_FILE + ' ...';
+
+const viewer = new GaussianSplats3D.Viewer({
+  cameraUp: [0, 1, 0],
+  initialCameraPosition: [3, 2, 4],
+  initialCameraLookAt: [0, 1, 0],
+  sharedMemoryForWorkers: false,
+  gpuAcceleratedSort: true
+});
+
+viewer.addSplatScene(SPLAT_FILE, { showLoadingUI: true, splatAlphaRemovalThreshold: 5 })
+  .then(() => {
+    stat.textContent = 'loaded ✓';
+    setTimeout(() => { stat.style.display = 'none'; }, 2500);
+    viewer.start();
+  })
+  .catch((e) => {
+    stat.style.color = '#f88';
+    stat.textContent = 'FAILED to load ' + SPLAT_FILE + ': ' + (e && e.message ? e.message : e);
+  });
+</script>
+</body>
+</html>
