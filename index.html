@@ -1,46 +1,53 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>M8U3 — Living Room 3DGS</title>
-    <style>
-        body { margin: 0; overflow: hidden; background-color: #101018; }
-        canvas { width: 100vw; height: 100vh; display: block; }
-    </style>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>M8U3 GS Scan Viewer</title>
+  <style>
+    body { margin: 0; overflow: hidden; background: #101018; }
+    canvas { display: block; width: 100vw; height: 100vh; }
+    #status { position: absolute; top: 15px; left: 15px; color: #0f0; font-family: monospace; z-index: 100; font-size: 14px;}
+  </style>
+  <!-- Load standard UMD library to bypass Module/CORS parsing issues -->
+  <script src="https://unpkg.com/@mkkellogg/gaussian-splats-3d@0.4.7/build/gaussian-splats-3d.umd.js"></script>
 </head>
 <body>
-    <script type="module">
-        import * as SPLAT from "https://cdn.jsdelivr.net/npm/gsplat@latest";
+  <div id="status">Initializing Viewer...</div>
+  
+  <script>
+    const statusEl = document.getElementById('status');
+    
+    // Validate that the script loaded and the encoder is available
+    if (typeof GaussianSplats3D === 'undefined') {
+        statusEl.style.color = '#f55';
+        statusEl.innerText = "Fatal Error: Parser library failed to load from CDN.";
+    } else {
+        statusEl.innerText = "Loading 3D Gaussian Splatting data...";
         
-        const canvas = document.createElement("canvas");
-        document.body.appendChild(canvas);
-        
-        const renderer = new SPLAT.WebGLRenderer(canvas);
-        const scene = new SPLAT.Scene();
-        const camera = new SPLAT.Camera();
-        const controls = new SPLAT.OrbitControls(camera, canvas);
-        
-        async function init() {
-            // טעינה אסינכרונית של קובץ ה-PLY מהשרת
-            await SPLAT.Loader.LoadAsync("livingroom_clean.ply", scene, () => {});
-            
-            const handleResize = () => {
-                renderer.setSize(window.innerWidth, window.innerHeight);
-            };
-            window.addEventListener("resize", handleResize);
-            handleResize();
+        const viewer = new GaussianSplats3D.Viewer({
+            cameraUp: [0, 1, 0],
+            initialCameraPosition: [5, 3, 6], // Camera pulled back to prevent clipping
+            initialCameraLookAt: [0, 1, 0],
+            gpuAcceleratedSort: true
+        });
 
-            // לולאת רינדור רציפה
-            const frame = () => {
-                controls.update();
-                renderer.render(scene, camera);
-                requestAnimationFrame(frame);
-            };
-            requestAnimationFrame(frame);
-        }
-        
-        init();
-    </script>
+        // Add the scene with dynamic format inference (No explicit PLY forcing)
+        viewer.addSplatScene('livingroom_clean.ply', {
+            showLoadingUI: true
+        })
+        .then(() => {
+            statusEl.style.color = '#afa';
+            statusEl.innerText = "Data Loaded Successfully.";
+            setTimeout(() => { statusEl.style.display = 'none'; }, 2500);
+            viewer.start();
+        })
+        .catch((err) => {
+            statusEl.style.color = '#f55';
+            statusEl.innerText = "Rendering Error: " + err;
+            console.error("Viewer exception:", err);
+        });
+    }
+  </script>
 </body>
 </html>
