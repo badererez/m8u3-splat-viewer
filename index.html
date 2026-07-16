@@ -9,30 +9,32 @@
     canvas { display: block; width: 100vw; height: 100vh; }
     #status { position: absolute; top: 15px; left: 15px; color: #0f0; font-family: monospace; z-index: 100; font-size: 14px;}
   </style>
-  <!-- Load standard UMD library to bypass Module/CORS parsing issues -->
-  <script src="https://unpkg.com/@mkkellogg/gaussian-splats-3d@0.4.7/build/gaussian-splats-3d.umd.js"></script>
+  <script async src="https://unpkg.com/es-module-shims@1.8.0/dist/es-module-shims.js"></script>
+  <script type="importmap">
+  { "imports": {
+    "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+    "@mkkellogg/gaussian-splats-3d": "https://unpkg.com/@mkkellogg/gaussian-splats-3d@0.4.7/build/gaussian-splats-3d.module.js"
+  }}
+  </script>
 </head>
 <body>
-  <div id="status">Initializing Viewer...</div>
+  <div id="status">Loading Viewer and ES Modules...</div>
   
-  <script>
+  <script type="module">
+    import * as GaussianSplats3D from '@mkkellogg/gaussian-splats-3d';
+
     const statusEl = document.getElementById('status');
-    
-    // Validate that the script loaded and the encoder is available
-    if (typeof GaussianSplats3D === 'undefined') {
-        statusEl.style.color = '#f55';
-        statusEl.innerText = "Fatal Error: Parser library failed to load from CDN.";
-    } else {
-        statusEl.innerText = "Loading 3D Gaussian Splatting data...";
-        
+    statusEl.innerText = "Library loaded. Decoding 3DGS data...";
+
+    try {
         const viewer = new GaussianSplats3D.Viewer({
             cameraUp: [0, 1, 0],
-            initialCameraPosition: [5, 3, 6], // Camera pulled back to prevent clipping
+            initialCameraPosition: [5, 3, 6], // הרחקת מוקד המצלמה למניעת חיתוך גיאומטרי
             initialCameraLookAt: [0, 1, 0],
             gpuAcceleratedSort: true
         });
 
-        // Add the scene with dynamic format inference (No explicit PLY forcing)
+        // טעינת הקובץ ללא הגדרת פורמט קשיחה (מאפשר זיהוי נתונים דחוסים באופן אוטומטי)
         viewer.addSplatScene('livingroom_clean.ply', {
             showLoadingUI: true
         })
@@ -47,6 +49,9 @@
             statusEl.innerText = "Rendering Error: " + err;
             console.error("Viewer exception:", err);
         });
+    } catch (e) {
+        statusEl.style.color = '#f55';
+        statusEl.innerText = "Initialization Error: " + e.message;
     }
   </script>
 </body>
